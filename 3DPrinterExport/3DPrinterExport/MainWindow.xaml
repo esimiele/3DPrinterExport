@@ -24,6 +24,7 @@
             <Grid Margin="0,5,0,0">
                 <Label Content="Structure:" HorizontalAlignment="Right" Margin="0,0,310,0"></Label>
                 <ComboBox x:Name="structureCB" HorizontalAlignment="Right" Margin="0,4,190,0" VerticalAlignment="Top" Width="120" SelectionChanged="structureCB_SelectionChanged" HorizontalContentAlignment="Center"/>
+                <Button x:Name="loadSTLBTN" Content="load .stl file" HorizontalAlignment="Right" Margin="0,3,10,0" Width="90" Height="20" Click="loadSTLBTN_Click"></Button>
             </Grid>
             <Grid Background="White" HorizontalAlignment="Center" Width="525" Height="450" Margin="0,15,0,0" MouseWheel="Grid_MouseWheel" MouseLeftButtonDown="Grid_MouseLeftButtonDown" MouseMove="Grid_MouseMove" MouseLeftButtonUp="Grid_MouseLeftButtonUp" MouseRightButtonDown="Grid_MouseRightButtonDown" MouseRightButtonUp="Grid_MouseRightButtonUp" Grid.Column="1">
                 <Viewport3D x:Name="myViewport3D" Grid.RowSpan="2">

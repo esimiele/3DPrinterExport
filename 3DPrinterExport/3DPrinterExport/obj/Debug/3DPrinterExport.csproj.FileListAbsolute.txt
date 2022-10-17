@@ -39,3 +39,20 @@ I:\ESimiele\Research\stlExport\3DPrinterExport\3DPrinterExport\obj\Debug\3DPrint
 I:\ESimiele\Research\stlExport\3DPrinterExport\3DPrinterExport\obj\Debug\3DPrinterExport.csproj.CopyComplete
 I:\ESimiele\Research\stlExport\3DPrinterExport\3DPrinterExport\obj\Debug\3DPrinterExport.exe
 I:\ESimiele\Research\stlExport\3DPrinterExport\3DPrinterExport\obj\Debug\3DPrinterExport.pdb
+C:\Users\Eric Simiele\Documents\GitHub\stlExport\3DPrinterExport\3DPrinterExport\obj\Debug\3DPrinterExport.csproj.AssemblyReference.cache
+C:\Users\Eric Simiele\Documents\GitHub\stlExport\3DPrinterExport\3DPrinterExport\obj\Debug\3DPrinterExport.csproj.SuggestedBindingRedirects.cache
+C:\Users\Eric Simiele\Documents\GitHub\stlExport\3DPrinterExport\3DPrinterExport\obj\Debug\MainWindow.g.cs
+C:\Users\Eric Simiele\Documents\GitHub\stlExport\3DPrinterExport\3DPrinterExport\obj\Debug\App.g.cs
+C:\Users\Eric Simiele\Documents\GitHub\stlExport\3DPrinterExport\3DPrinterExport\obj\Debug\3DPrinterExport_MarkupCompile.cache
+C:\Users\Eric Simiele\Documents\GitHub\stlExport\3DPrinterExport\3DPrinterExport\obj\Debug\3DPrinterExport_MarkupCompile.lref
+C:\Users\Eric Simiele\Documents\GitHub\stlExport\3DPrinterExport\3DPrinterExport\obj\Debug\3DPrinterExport.exe
+C:\Users\Eric Simiele\Documents\GitHub\stlExport\3DPrinterExport\3DPrinterExport\obj\Debug\3DPrinterExport.pdb
+C:\Users\Eric Simiele\Documents\GitHub\stlExport\bin\3DPrinterExport.exe.config
+C:\Users\Eric Simiele\Documents\GitHub\stlExport\bin\3DPrinterExport.exe
+C:\Users\Eric Simiele\Documents\GitHub\stlExport\bin\3DPrinterExport.pdb
+C:\Users\Eric Simiele\Documents\GitHub\stlExport\3DPrinterExport\3DPrinterExport\obj\Debug\MainWindow.baml
+C:\Users\Eric Simiele\Documents\GitHub\stlExport\3DPrinterExport\3DPrinterExport\obj\Debug\3DPrinterExport.g.resources
+C:\Users\Eric Simiele\Documents\GitHub\stlExport\3DPrinterExport\3DPrinterExport\obj\Debug\_3DPrinterExport.Properties.Resources.resources
+C:\Users\Eric Simiele\Documents\GitHub\stlExport\3DPrinterExport\3DPrinterExport\obj\Debug\3DPrinterExport.csproj.GenerateResource.cache
+C:\Users\Eric Simiele\Documents\GitHub\stlExport\3DPrinterExport\3DPrinterExport\obj\Debug\3DPrinterExport.csproj.CoreCompileInputs.cache
+C:\Users\Eric Simiele\Documents\GitHub\stlExport\3DPrinterExport\3DPrinterExport\obj\Debug\3DPrinterExport.csproj.CopyComplete

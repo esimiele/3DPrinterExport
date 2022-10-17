@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -8,12 +9,10 @@ using System.Windows.Media.Media3D;
 using VMS.TPS.Common.Model.API;
 using Microsoft.Win32;
 using System.IO;
+using System.Reflection;
 
 namespace _3DPrinterExport
 {
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
     public partial class MainWindow : Window
     {
         string mrn, ss;
@@ -24,11 +23,18 @@ namespace _3DPrinterExport
         private bool _leftMouseDown = false;
         private bool _rightMouseDown = false;
         public bool doNotUpdate = false;
+        //string exportDir = @"C:\Users\Eric Simiele\Documents\GitHub\stlExport\exports";
+        string exportDir = @"\\vfs0006\RadData\oncology\ESimiele\Research\stlExport\exports";
         Point leftDownPos;
         Point rightDownPos;
+        double TotalDx = 0;
+        double TotalDy = 0;
+
+        GeometryModel3D myGeometryModel;
         public MainWindow(StartupEventArgs e)
         {
             InitializeComponent();
+            if(!Directory.Exists(exportDir)) exportDir = System.Reflection.Assembly.GetExecutingAssembly().Location;
             try { app = VMS.TPS.Common.Model.API.Application.CreateApplication(); }
             catch (Exception except) { MessageBox.Show(String.Format("Warning! Could not generate Aria application instance because: {0}", except.Message)); }
             if(app != null)
@@ -60,6 +66,18 @@ namespace _3DPrinterExport
             }
         }
 
+        private void Help_Click(object sender, RoutedEventArgs e)
+        {
+            string message = "";
+            message += string.Format("This script provides functionality to render and export structures as stl files") + System.Environment.NewLine;
+            message += string.Format("Some notes:") + System.Environment.NewLine;
+            message += string.Format("1. Structures will automatically render in the window upon structure selection") + System.Environment.NewLine;
+            message += string.Format("2. You can zoom in on the object in the window by scrolling the mouse wheel") + System.Environment.NewLine;
+            message += string.Format("3. You can pan the object by clicking and dragging with the left mouse button") + System.Environment.NewLine;
+            message += string.Format("4. You can rotate the object by clicking and dragging with the right mouse button") + System.Environment.NewLine;
+            MessageBox.Show(message);
+        }
+
         private void OpenPatient_Click(object sender, RoutedEventArgs e)
         {
             if (app == null) return;
@@ -86,6 +104,16 @@ namespace _3DPrinterExport
             }
         }
 
+        private void loadSTLBTN_Click(object sender, RoutedEventArgs e)
+        {
+            //load a stl file (only works for ASCI stl files, not Binary)
+            OpenFileDialog openFileDialog = new OpenFileDialog();
+            openFileDialog.InitialDirectory = exportDir;
+            openFileDialog.Filter = "stl files (*.stl)|*.stl|All files (*.*)|*.*";
+
+            if (openFileDialog.ShowDialog().Value) loadSTL(openFileDialog.FileName);
+        }
+
         private void ssCB_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (app == null) return;
@@ -104,33 +132,32 @@ namespace _3DPrinterExport
             if (doNotUpdate) return;
             renderStructure = selectedSS.Structures.FirstOrDefault(x => x.Id == structureCB.SelectedItem.ToString());
             if (renderStructure == null) { MessageBox.Show("No structure found! Exiting!"); return; }
-            renderStructureInView();
+            renderStructureInView(renderStructure.MeshGeometry);
         }
 
-        private void renderStructureInView()
+        private void renderStructureInView(MeshGeometry3D mesh)
         {
-            MeshGeometry3D mesh = renderStructure.MeshGeometry;
-            //Viewport3D myViewport3D = new Viewport3D();
+            Point3D centerPoint = new Point3D((mesh.Positions.Max(x => x.X) + mesh.Positions.Min(x => x.X)) / 2, (mesh.Positions.Max(x => x.Y) + mesh.Positions.Min(x => x.Y)) / 2, (mesh.Positions.Max(x => x.Z) + mesh.Positions.Min(x => x.Z)) / 2);
+            Point3DCollection pts = new Point3DCollection(mesh.Positions);
+            mesh.Positions.Clear();
+            for(int i = 0; i < pts.Count; i++) mesh.Positions.Add(new Point3D(pts.ElementAt(i).X - centerPoint.X, pts.ElementAt(i).Y - centerPoint.Y, pts.ElementAt(i).Z - centerPoint.Z));
+
+            //clear the viewport and initialize
             myViewport3D.Children.Clear();
             Model3DGroup myModel3DGroup = new Model3DGroup();
-            GeometryModel3D myGeometryModel = new GeometryModel3D();
+            myGeometryModel = new GeometryModel3D();
             ModelVisual3D myModelVisual3D = new ModelVisual3D();
-            // Defines the camera used to view the 3D object. In order to view the 3D object,
-            // the camera must be positioned and pointed such that the object is within view
-            // of the camera.
-            //PerspectiveCamera myPCamera = new PerspectiveCamera();
 
             // Specify where in the 3D scene the camera is.
-            //myPCamera.Position = new Point3D(0, 0, 2);
-            //MessageBox.Show(String.Format("{0}, {1}",Math.Abs(mesh.Positions.Max(x => x.Z) - theStructure.CenterPoint.z), Math.Abs(mesh.Positions.Min(x => x.Z) - theStructure.CenterPoint.z)));
             double maxDistance = 0.0;
-            if (Math.Abs(mesh.Positions.Min(x => x.Z) - renderStructure.CenterPoint.z) >= Math.Abs(mesh.Positions.Max(x => x.Z) - renderStructure.CenterPoint.z)) maxDistance = Math.Abs(mesh.Positions.Min(x => x.Z) - renderStructure.CenterPoint.z);
-            else maxDistance = Math.Abs(mesh.Positions.Max(x => x.Z) - renderStructure.CenterPoint.z);
-            myPCamera.Position = new Point3D(renderStructure.CenterPoint.x, renderStructure.CenterPoint.y - maxDistance / Math.Tan(20 * 3.14 / 180), renderStructure.CenterPoint.z);
+            if (Math.Abs(pts.Min(x => x.Z) - centerPoint.Z) >= Math.Abs(pts.Max(x => x.Z) - centerPoint.Z)) maxDistance = Math.Abs(pts.Min(x => x.Z) - centerPoint.Z);
+            else maxDistance = Math.Abs(pts.Max(x => x.Z) - centerPoint.Z);
+            myPCamera.Position = new Point3D(0, -maxDistance / Math.Tan(20 * 3.14 / 180), 0);
 
             // Specify the direction that the camera is pointing.
             myPCamera.LookDirection = new Vector3D(0, 1, 0);
-
+            
+            //which way is up
             myPCamera.UpDirection = new Vector3D(0, 0, 1);
 
             // Define camera's horizontal field of view in degrees.
@@ -138,6 +165,7 @@ namespace _3DPrinterExport
 
             // Asign the camera to the viewport
             myViewport3D.Camera = myPCamera;
+
             // Define the lights cast in the scene. Without light, the 3D object cannot
             // be seen. Note: to illuminate an object from additional directions, create
             // additional lights.
@@ -150,19 +178,12 @@ namespace _3DPrinterExport
             //ambientLight.Color = Colors.White;
             //myModel3DGroup.Children.Add(ambientLight);
 
-            // The geometry specifes the shape of the 3D plane. In this sample, a flat sheet
-            // is created.
-            //MeshGeometry3D myMeshGeometry3D = new MeshGeometry3D();
-
-            //// Create a collection of normal vectors for the MeshGeometry3D.
-            //Vector3DCollection myNormalCollection = new Vector3DCollection();
-            //myNormalCollection.Add(new Vector3D(0, 0, 1));
-            //myNormalCollection.Add(new Vector3D(0, 0, 1));
-            //myNormalCollection.Add(new Vector3D(0, 0, 1));
-            //myNormalCollection.Add(new Vector3D(0, 0, 1));
-            //myNormalCollection.Add(new Vector3D(0, 0, 1));
-            //myNormalCollection.Add(new Vector3D(0, 0, 1));
-            mesh.Normals = getNormals(mesh);
+            //normals (not supplied by default in Eclipse)
+            if(!mesh.Normals.Any())
+            {
+                MessageBox.Show("No normals!");
+                mesh.Normals = getNormals(mesh);
+            }
 
             //// Create a collection of vertex positions for the MeshGeometry3D.
             //Point3DCollection myPositionCollection = new Point3DCollection();
@@ -185,36 +206,12 @@ namespace _3DPrinterExport
             //myMeshGeometry3D.TextureCoordinates = myTextureCoordinatesCollection;
             mesh.TextureCoordinates = Ab3d.Utilities.MeshUtils.GeneratePlanarTextureCoordinates(mesh, new Vector3D(0, 1, 0), new Vector3D(0, 0, 1), false, false, false);
 
-            //// Create a collection of triangle indices for the MeshGeometry3D.
-            //Int32Collection myTriangleIndicesCollection = new Int32Collection();
-            //myTriangleIndicesCollection.Add(0);
-            //myTriangleIndicesCollection.Add(1);
-            //myTriangleIndicesCollection.Add(2);
-            //myTriangleIndicesCollection.Add(3);
-            //myTriangleIndicesCollection.Add(4);
-            //myTriangleIndicesCollection.Add(5);
-            //myMeshGeometry3D.TriangleIndices = myTriangleIndicesCollection;
-
-            // MessageBox.Show(String.Format("{0}, {1}, {2}, {3}", mesh.Positions.Count, mesh.TextureCoordinates.Count, mesh.TriangleIndices.Count, mesh.Normals.Count));
-
             // Apply the mesh to the geometry model.
             myGeometryModel.Geometry = mesh;
+            //need this here otherwise the rotations WILL NOT WORK
+            myGeometryModel.Transform = new Transform3DGroup();
 
-            // The material specifies the material applied to the 3D object. In this sample a
-            // linear gradient covers the surface of the 3D object.
-
-            // Create a horizontal linear gradient with four stops.
-            //LinearGradientBrush myHorizontalGradient = new LinearGradientBrush();
-            //myHorizontalGradient.StartPoint = new Point(0, 0.5);
-            //myHorizontalGradient.EndPoint = new Point(1, 0.5);
-            //myHorizontalGradient.GradientStops.Add(new GradientStop(Colors.Yellow, 0.0));
-            //myHorizontalGradient.GradientStops.Add(new GradientStop(Colors.Red, 0.25));
-            //myHorizontalGradient.GradientStops.Add(new GradientStop(Colors.Blue, 0.75));
-            //myHorizontalGradient.GradientStops.Add(new GradientStop(Colors.LimeGreen, 1.0));
-
-            //// Define material and apply to the mesh geometries.
-            //DiffuseMaterial myMaterial = new DiffuseMaterial(myHorizontalGradient);
-            //myGeometryModel.Material = myMaterial;
+            //apply a solid material color to the object
             myGeometryModel.Material = new DiffuseMaterial(new SolidColorBrush(Colors.Gray));
 
             // Apply a transform to the object. In this sample, a rotation transform is applied,
@@ -233,10 +230,6 @@ namespace _3DPrinterExport
             myModelVisual3D.Content = myModel3DGroup;
 
             myViewport3D.Children.Add(myModelVisual3D);
-
-            // Apply the viewport to the page so it will be rendered.
-            //this.Content = myViewport3D;
-
         }
 
         private Vector3DCollection getNormals(MeshGeometry3D mesh)
@@ -291,32 +284,49 @@ namespace _3DPrinterExport
         {
             if (_leftMouseDown)
             {
-                //Vector3D orientation = Vector3D.CrossProduct(myPCamera.UpDirection, myPCamera.LookDirection);
-                //Vector3D update = new Vector3D((e.GetPosition(myViewport3D).X - leftDownPos.X) * Vector3D.CrossProduct(myPCamera.UpDirection, myPCamera.LookDirection).X, (e.GetPosition(myViewport3D).X - leftDownPos.X) * Vector3D.CrossProduct(myPCamera.UpDirection, myPCamera.LookDirection).Y, (e.GetPosition(myViewport3D).X - leftDownPos.X) * Vector3D.CrossProduct(myPCamera.UpDirection, myPCamera.LookDirection).Z);
                 double newX, newY, newZ;
-                newX = myPCamera.Position.X + ((e.GetPosition(myViewport3D).X - leftDownPos.X) * Vector3D.CrossProduct(myPCamera.UpDirection, myPCamera.LookDirection).X) + ((e.GetPosition(myViewport3D).Y - leftDownPos.Y) * myPCamera.UpDirection.X);
-                newY = myPCamera.Position.Y + ((e.GetPosition(myViewport3D).X - leftDownPos.X) * Vector3D.CrossProduct(myPCamera.UpDirection, myPCamera.LookDirection).Y) + ((e.GetPosition(myViewport3D).Y - leftDownPos.Y) * myPCamera.UpDirection.Y);
-                newZ = myPCamera.Position.Z + ((e.GetPosition(myViewport3D).X - leftDownPos.X) * Vector3D.CrossProduct(myPCamera.UpDirection, myPCamera.LookDirection).Z) + ((e.GetPosition(myViewport3D).Y - leftDownPos.Y) * myPCamera.UpDirection.Z);
+                newX = myPCamera.Position.X + (((e.GetPosition(myViewport3D).X - leftDownPos.X) * Vector3D.CrossProduct(myPCamera.UpDirection, myPCamera.LookDirection).X) + ((e.GetPosition(myViewport3D).Y - leftDownPos.Y) * myPCamera.UpDirection.X))/1.5;
+                newY = myPCamera.Position.Y + (((e.GetPosition(myViewport3D).X - leftDownPos.X) * Vector3D.CrossProduct(myPCamera.UpDirection, myPCamera.LookDirection).Y) + ((e.GetPosition(myViewport3D).Y - leftDownPos.Y) * myPCamera.UpDirection.Y)) / 1.5;
+                newZ = myPCamera.Position.Z + (((e.GetPosition(myViewport3D).X - leftDownPos.X) * Vector3D.CrossProduct(myPCamera.UpDirection, myPCamera.LookDirection).Z) + ((e.GetPosition(myViewport3D).Y - leftDownPos.Y) * myPCamera.UpDirection.Z)) / 1.5;
                 myPCamera.Position = new Point3D(newX, newY, newZ);
                 leftDownPos = e.GetPosition(myViewport3D);
             }
             else if (_rightMouseDown)
             {
-                //Vector3D thetaAxis = Vector3D.CrossProduct(myPCamera.UpDirection, myPCamera.LookDirection);
-                //Vector3D phiAxis = myPCamera.UpDirection;
-                //double dx, dy;
+                //solution from: https://www.vbforums.com/showthread.php?637168-WPF-3D-orbiting-camera-(pitch-yaw-rotation-only)
+                //https://www.codeproject.com/Articles/23332/WPF-3D-Primer
+                Point pos = Mouse.GetPosition(myViewport3D);
+                double dx = pos.X - rightDownPos.X;
+                double dy = pos.Y - rightDownPos.Y;
 
-                //rightDownPos = e.GetPosition(myViewport3D);
+                TotalDx += dx;
+                TotalDy += dy;
+
+                double theta = TotalDx / 3;
+                double phi = TotalDy / 3;
+                Vector3D thetaAxis = myPCamera.UpDirection;
+                Vector3D phiAxis = Vector3D.CrossProduct(myPCamera.LookDirection, myPCamera.UpDirection);
+
+                Transform3DGroup group = myGeometryModel.Transform as Transform3DGroup;
+                group.Children.Clear();
+                QuaternionRotation3D r;
+                r = new QuaternionRotation3D(new Quaternion(thetaAxis, theta));
+                group.Children.Add(new RotateTransform3D(r));
+                r = new QuaternionRotation3D(new Quaternion(phiAxis, phi));
+                group.Children.Add(new RotateTransform3D(r));
+
+                rightDownPos = e.GetPosition(myViewport3D);
             }
         }
 
         private void exportSTL_Click(object sender, RoutedEventArgs e)
         {
-            if (renderStructure == null) MessageBox.Show("No Structure to export! Exiting!");
+            if (app == null) { MessageBox.Show("Not connected to Eclipse! Exiting!"); return; }
+            if (renderStructure == null) { MessageBox.Show("No Structure to export! Exiting!"); return; }
             MeshGeometry3D mesh = renderStructure.MeshGeometry;
             SaveFileDialog saveFileDialog1 = new SaveFileDialog
             {
-                InitialDirectory = @"\\vfs0006\RadData\oncology\ESimiele\Research\stlExport\exports",
+                InitialDirectory = exportDir,
                 Title = "Choose text file output",
                 CheckPathExists = true,
 
@@ -359,16 +369,33 @@ namespace _3DPrinterExport
             if (pi != null) app.ClosePatient();
         }
 
-        private void Help_Click(object sender, RoutedEventArgs e)
+        private void loadSTL(string stlFile)
         {
-            string message = "";
-            message += string.Format("This script provides functionality to render and export structures as stl files") + System.Environment.NewLine;
-            message += string.Format("Some notes:") + System.Environment.NewLine;
-            message += string.Format("1. Structures will automatically render in the window upon structure selection") + System.Environment.NewLine;
-            message += string.Format("2. You can zoom in on the object in the window by scrolling the mouse wheel") + System.Environment.NewLine;
-            message += string.Format("3. You can pan the object by clicking and dragging with the left mouse button") + System.Environment.NewLine;
-            message += string.Format("4. You can rotate the object by clicking and dragging with the right mouse button") + System.Environment.NewLine;
-            MessageBox.Show(message);
+            try
+            {
+                using (StreamReader reader = new StreamReader(stlFile))
+                {
+                    string line;
+                    string solidName = "";
+                    MeshGeometry3D mesh = new MeshGeometry3D();
+                    int index = 0;
+                    while((line = reader.ReadLine()) != null)
+                    {
+                        List<string> stringList = line.Split(' ').ToList();
+                        if (line.Contains("solid")) solidName = stringList.ElementAt(1);
+                        if (line.Contains("normal")) mesh.Normals.Add(new Vector3D(double.Parse(stringList.ElementAt(2)), double.Parse(stringList.ElementAt(3)), double.Parse(stringList.ElementAt(4))));
+                        else if (line.Contains("vertex"))
+                        {
+                            mesh.Positions.Add(new Point3D(double.Parse(stringList.ElementAt(1)), double.Parse(stringList.ElementAt(2)), double.Parse(stringList.ElementAt(3))));
+                            mesh.TriangleIndices.Add(index++);
+                        }
+                    }
+                    //MessageBox.Show(String.Format("{0}, {1}, {2}", mesh.Positions.Count, mesh.Normals.Count, mesh.TriangleIndices.Count));
+                    if (mesh.Positions.Count > 0 && mesh.Normals.Count > 0 && mesh.TriangleIndices.Count > 0) renderStructureInView(mesh);
+                    else MessageBox.Show(String.Format("Error in reading file {0}!", stlFile));
+                }
+            }
+            catch (Exception e) { MessageBox.Show(e.Message); }
         }
     }
 }
