@@ -29,8 +29,8 @@ namespace _3DPrinterExport
         Point rightDownPos;
         double TotalDx = 0;
         double TotalDy = 0;
-
         GeometryModel3D myGeometryModel;
+
         public MainWindow(StartupEventArgs e)
         {
             InitializeComponent();
@@ -48,20 +48,10 @@ namespace _3DPrinterExport
                     if(!string.IsNullOrEmpty(mrn) && !string.IsNullOrWhiteSpace(mrn))
                     {
                         mrnTB.Text = mrn;
-                        try { pi = app.OpenPatientById(mrn); }
-                        catch (Exception exceptPI) { MessageBox.Show(string.Format("Error! Could not open patient because: {0}! Please try again!", exceptPI.Message)); pi = null; }
+                        openPatient();
                     }
-                    if (pi != null)
-                    {
-                        foreach (StructureSet itr in pi.StructureSets) ssCB.Items.Add(itr.Id);
-                        ssCB.Text = ss;
-                        selectedSS = pi.StructureSets.FirstOrDefault(x => x.Id == ss);
-                    }
-                    if(selectedSS != null)
-                    {
-                        foreach (Structure itr in selectedSS.Structures) structureCB.Items.Add(itr.Id);
-                        structureCB.SelectedIndex = 0;
-                    }
+                    if (pi != null) loadSSCBandSelectSS(ss);
+                    if (selectedSS != null) loadStructureCB();
                 }
             }
         }
@@ -83,25 +73,35 @@ namespace _3DPrinterExport
             if (app == null) return;
             if (!string.IsNullOrEmpty(mrnTB.Text) && !string.IsNullOrWhiteSpace(mrnTB.Text))
             {
-                if(mrn != mrnTB.Text)
+                if (mrn != mrnTB.Text)
                 {
                     app.ClosePatient();
                     mrn = mrnTB.Text;
-                }
-                try { pi = app.OpenPatientById(mrn); }
-                catch (Exception exceptPI) { MessageBox.Show(string.Format("Error! Could not open patient because: {0}! Please try again!", exceptPI.Message)); pi = null; mrn = ""; }
-                if (pi != null)
-                {
-                    foreach (StructureSet itr in pi.StructureSets) ssCB.Items.Add(itr.Id);
-                    ssCB.SelectedIndex = 0;
-                    selectedSS = pi.StructureSets.FirstOrDefault(x => x.Id == ssCB.SelectedItem.ToString());
-                }
-                if (selectedSS != null)
-                {
-                    foreach (Structure itr in selectedSS.Structures) structureCB.Items.Add(itr.Id);
-                    structureCB.SelectedIndex = 0;
+                    openPatient();
+                    if (pi != null) loadSSCBandSelectSS();
+                    if (selectedSS != null) loadStructureCB();
                 }
             }
+        }
+
+        private void openPatient()
+        {
+            try { pi = app.OpenPatientById(mrn); }
+            catch (Exception exceptPI) { MessageBox.Show(string.Format("Error! Could not open patient because: {0}! Please try again!", exceptPI.Message)); pi = null; mrn = ""; }
+        }
+
+        private void loadSSCBandSelectSS(string requestedSS = "")
+        {
+            foreach (StructureSet itr in pi.StructureSets) ssCB.Items.Add(itr.Id);
+            if (requestedSS == "") ssCB.SelectedIndex = 0;
+            else ssCB.Text = requestedSS;
+            selectedSS = pi.StructureSets.FirstOrDefault(x => x.Id == ssCB.SelectedItem.ToString());
+        }
+
+        private void loadStructureCB()
+        {
+            foreach (Structure itr in selectedSS.Structures) structureCB.Items.Add(itr.Id);
+            structureCB.SelectedIndex = 0;
         }
 
         private void loadSTLBTN_Click(object sender, RoutedEventArgs e)
@@ -132,6 +132,7 @@ namespace _3DPrinterExport
             if (doNotUpdate) return;
             renderStructure = selectedSS.Structures.FirstOrDefault(x => x.Id == structureCB.SelectedItem.ToString());
             if (renderStructure == null) { MessageBox.Show("No structure found! Exiting!"); return; }
+            TotalDx = TotalDy = 0;
             renderStructureInView(renderStructure.MeshGeometry);
         }
 
@@ -200,6 +201,8 @@ namespace _3DPrinterExport
             //myTextureCoordinatesCollection.Add(new Point(0, 1));
             //myTextureCoordinatesCollection.Add(new Point(0, 0));
             //myMeshGeometry3D.TextureCoordinates = myTextureCoordinatesCollection;
+
+            //not sure if this is doing anything useful...
             mesh.TextureCoordinates = Ab3d.Utilities.MeshUtils.GeneratePlanarTextureCoordinates(mesh, new Vector3D(0, 1, 0), new Vector3D(0, 0, 1), false, false, false);
 
             // Apply the mesh to the geometry model.
@@ -387,7 +390,11 @@ namespace _3DPrinterExport
                         }
                     }
                     //MessageBox.Show(String.Format("{0}, {1}, {2}", mesh.Positions.Count, mesh.Normals.Count, mesh.TriangleIndices.Count));
-                    if (mesh.Positions.Count > 0 && mesh.Normals.Count > 0 && mesh.TriangleIndices.Count > 0) renderStructureInView(mesh);
+                    if (mesh.Positions.Count > 0 && mesh.Normals.Count > 0 && mesh.TriangleIndices.Count > 0)
+                    {
+                        TotalDx = TotalDy = 0;
+                        renderStructureInView(mesh);
+                    }
                     else MessageBox.Show(String.Format("Error in reading file {0}!", stlFile));
                 }
             }
