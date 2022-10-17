@@ -179,11 +179,7 @@ namespace _3DPrinterExport
             //myModel3DGroup.Children.Add(ambientLight);
 
             //normals (not supplied by default in Eclipse)
-            if(!mesh.Normals.Any())
-            {
-                MessageBox.Show("No normals!");
-                mesh.Normals = getNormals(mesh);
-            }
+            if(!mesh.Normals.Any()) mesh.Normals = getNormals(mesh);
 
             //// Create a collection of vertex positions for the MeshGeometry3D.
             //Point3DCollection myPositionCollection = new Point3DCollection();

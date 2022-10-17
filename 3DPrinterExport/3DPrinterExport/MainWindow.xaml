@@ -5,8 +5,34 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:_3DPrinterExport"
         mc:Ignorable="d"
-        Title="3DPrinterExport" SizeToContent="WidthAndHeight" Closing="Window_Closing">
-    <Grid Background="DarkGray" Width="550" Height="630">
+        Title="3DPrinterExport" SizeToContent="WidthAndHeight" Closing="Window_Closing" Background="DarkGray">
+    <Window.Resources>
+        <Style TargetType="TextBox">
+            <Setter Property="Background" Value="White"/>
+        </Style>
+        <Style TargetType="Button">
+            <Setter Property="Background" Value="LightGray"/>
+        </Style>
+        <Style TargetType="CheckBox">
+            <Setter Property="Background" Value="White"/>
+        </Style>
+        <Style TargetType="Label">
+            <Setter Property="Foreground" Value="Black"/>
+        </Style>
+    </Window.Resources>
+    <Grid Width="550" Height="630">
+        <Grid.Background>
+            <ImageBrush ImageSource="/Images/Rutgers_University_seal.png" Stretch="Uniform" AlignmentY="Top" Opacity="0.25">
+                <ImageBrush.Transform>
+                    <TransformGroup>
+                        <ScaleTransform ScaleX="0.25" ScaleY="0.25"/>
+                        <SkewTransform/>
+                        <RotateTransform/>
+                        <TranslateTransform Y="3" X="5"/>
+                    </TransformGroup>
+                </ImageBrush.Transform>
+            </ImageBrush>
+        </Grid.Background>
         <StackPanel Grid.Column="0">
             <Grid>
                 <Label Grid.Column="1" Content="Structure view" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center"></Label>
