@@ -23,11 +23,12 @@ namespace _3DPrinterExport
         Patient pi = null;
         public StructureSet selectedSS = null;
         public Structure renderStructure = null;
+        public MeshGeometry3D renderMesh = null;
         private bool _leftMouseDown = false;
         private bool _rightMouseDown = false;
         public bool doNotUpdate = false;
-        //string exportDir = @"C:\Users\Eric Simiele\Documents\GitHub\stlExport\exports";
-        string exportDir = @"\\vfs0006\RadData\oncology\ESimiele\Research\stlExport\exports";
+        string exportDir = @"C:\Users\Eric Simiele\Documents\GitHub\stlExport\exports";
+        //string exportDir = @"\\vfs0006\RadData\oncology\ESimiele\Research\stlExport\exports";
         Point leftDownPos;
         Point rightDownPos;
         double TotalDx = 0;
@@ -105,16 +106,6 @@ namespace _3DPrinterExport
             structureCB.SelectedIndex = 0;
         }
 
-        private void loadSTLBTN_Click(object sender, RoutedEventArgs e)
-        {
-            //load a stl file (only works for ASCI stl files, not Binary)
-            OpenFileDialog openFileDialog = new OpenFileDialog();
-            openFileDialog.InitialDirectory = exportDir;
-            openFileDialog.Filter = "stl files (*.stl)|*.stl|All files (*.*)|*.*";
-
-            if (openFileDialog.ShowDialog().Value) loadSTL(openFileDialog.FileName);
-        }
-
         private void ssCB_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (app == null) return;
@@ -138,6 +129,7 @@ namespace _3DPrinterExport
 
         private void renderStructureInView(MeshGeometry3D mesh)
         {
+            renderMesh = mesh;
             Point3D centerPoint = new Point3D((mesh.Positions.Max(x => x.X) + mesh.Positions.Min(x => x.X)) / 2, (mesh.Positions.Max(x => x.Y) + mesh.Positions.Min(x => x.Y)) / 2, (mesh.Positions.Max(x => x.Z) + mesh.Positions.Min(x => x.Z)) / 2);
             Point3DCollection pts = new Point3DCollection(mesh.Positions);
             mesh.Positions.Clear();
@@ -174,6 +166,17 @@ namespace _3DPrinterExport
             myDirectionalLight.Color = Colors.White;
             myDirectionalLight.Direction = new Vector3D(0.61, 0.5, 0.61);
             myModel3DGroup.Children.Add(myDirectionalLight);
+
+            DirectionalLight myDirectionalLight2 = new DirectionalLight();
+            myDirectionalLight2.Color = Colors.White;
+            myDirectionalLight2.Direction = new Vector3D(-0.61, 0.5, -0.61);
+            myModel3DGroup.Children.Add(myDirectionalLight2);
+
+            //DirectionalLight myDirectionalLight3 = new DirectionalLight();
+            //myDirectionalLight3.Color = Colors.White;
+            //myDirectionalLight3.Direction = new Vector3D(0.61, 0.5, 0.61);
+            //myDirectionalLight3.Transform = new TranslateTransform3D(0,0, mesh.Positions.Min(x => x.Z)-50);
+            //myModel3DGroup.Children.Add(myDirectionalLight3);
 
             //AmbientLight ambientLight = new AmbientLight();
             //ambientLight.Color = Colors.White;
@@ -331,27 +334,6 @@ namespace _3DPrinterExport
 
         private void exportSTL_Click(object sender, RoutedEventArgs e)
         {
-            ESAPIworker.dataContainer d = new ESAPIworker.dataContainer();
-            d.construct(renderStructure.MeshGeometry, app);
-            ESAPIworker slave = new ESAPIworker(d);
-            //create a new frame (multithreading jargon)
-            DispatcherFrame frame = new DispatcherFrame();
-            RunOnNewThread(() =>
-            {
-                //pass the progress window the newly created thread and this instance of the optimizationLoop class.
-                exportProgressWindow pw = new exportProgressWindow(slave, this);
-                pw.ShowDialog();
-
-                //tell the code to hold until the progress window closes.
-                frame.Continue = false;
-            });
-
-            Dispatcher.PushFrame(frame);
-
-            return;
-            if (app == null) { MessageBox.Show("Not connected to Eclipse! Exiting!"); return; }
-            if (renderStructure == null) { MessageBox.Show("No Structure to export! Exiting!"); return; }
-            MeshGeometry3D mesh = renderStructure.MeshGeometry;
             SaveFileDialog saveFileDialog1 = new SaveFileDialog
             {
                 InitialDirectory = exportDir,
@@ -366,36 +348,32 @@ namespace _3DPrinterExport
             string fileName = "";
             if (saveFileDialog1.ShowDialog() == saveFileDialog1.CheckPathExists) fileName = saveFileDialog1.FileName;
             else return;
-            Vector3DCollection normals = getNormals(mesh);
-            Point3D p0, p1, p2;
-            File.AppendAllText(fileName, string.Format("solid {0}", renderStructure.Id) + System.Environment.NewLine);
-            string output;
-            Int32Collection indices = mesh.TriangleIndices;
-            int index = 0;
-            for (int i = 0; i < mesh.TriangleIndices.Count; i += 3)
+
+            ESAPIworker.dataContainer d = new ESAPIworker.dataContainer();
+            d.construct(renderMesh, app, fileName);
+            ESAPIworker slave = new ESAPIworker(d);
+            //create a new frame (multithreading jargon)
+            DispatcherFrame frame = new DispatcherFrame();
+            RunOnNewThread(() =>
             {
-                p0 = mesh.Positions[indices[i]];
-                p1 = mesh.Positions[indices[i + 1]];
-                p2 = mesh.Positions[indices[i + 2]];
-                output = string.Format("facet normal {0} {1} {2}", normals[index].X, normals[index].Y, normals[index].Z) + System.Environment.NewLine;
-                output += "outer loop" + System.Environment.NewLine;
-                output += string.Format("vertex {0} {1} {2}", p0.X, p0.Y, p0.Z) + System.Environment.NewLine;
-                output += string.Format("vertex {0} {1} {2}", p1.X, p1.Y, p1.Z) + System.Environment.NewLine;
-                output += string.Format("vertex {0} {1} {2}", p2.X, p2.Y, p2.Z) + System.Environment.NewLine;
-                output += "endloop" + System.Environment.NewLine;
-                output += "endfacet" + System.Environment.NewLine;
-                File.AppendAllText(fileName, output);
-                index++;
-            }
-            File.AppendAllText(fileName, string.Format("endsolid {0}", renderStructure.Id) + System.Environment.NewLine);
-            MessageBox.Show("finished writing stl file!");
+                //pass the progress window the newly created thread and this instance of the optimizationLoop class.
+                exportProgressWindow pw = new exportProgressWindow(slave, this);
+                pw.ShowDialog();
+
+                //tell the code to hold until the progress window closes.
+                frame.Continue = false;
+            });
+            Dispatcher.PushFrame(frame);
         }
 
-        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        //code related to reading an ASCI stl file
+        private void loadSTLBTN_Click(object sender, RoutedEventArgs e)
         {
-            if (app == null) return;
-            if (pi != null) app.ClosePatient();
-            app.Dispose();
+            //load a stl file (only works for ASCI stl files, not Binary)
+            OpenFileDialog openFileDialog = new OpenFileDialog();
+            openFileDialog.InitialDirectory = exportDir;
+            openFileDialog.Filter = "stl files (*.stl)|*.stl|All files (*.*)|*.*";
+            if (openFileDialog.ShowDialog().Value) loadSTL(openFileDialog.FileName);
         }
 
         private void loadSTL(string stlFile)
@@ -404,6 +382,7 @@ namespace _3DPrinterExport
             {
                 using (StreamReader reader = new StreamReader(stlFile))
                 {
+                    //simple code to read ASCI stl files
                     string line;
                     string solidName = "";
                     MeshGeometry3D mesh = new MeshGeometry3D();
@@ -429,6 +408,13 @@ namespace _3DPrinterExport
                 }
             }
             catch (Exception e) { MessageBox.Show(e.Message); }
+        }
+
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            if (app == null) return;
+            if (pi != null) app.ClosePatient();
+            app.Dispose();
         }
     }
 }

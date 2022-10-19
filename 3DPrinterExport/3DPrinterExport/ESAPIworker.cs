@@ -20,14 +20,16 @@ namespace _3DPrinterExport
             public int numIndices;
             public int numPositions;
             public int numNormals;
+            public string filePath;
             
             //simple method to automatically assign/initialize the above data members
-            public void construct(MeshGeometry3D mg, VMS.TPS.Common.Model.API.Application a)
+            public void construct(MeshGeometry3D mg, VMS.TPS.Common.Model.API.Application a, string export)
             {
                 mesh = mg;
                 numIndices = mesh.TriangleIndices.Count;
                 numPositions = mesh.Positions.Count;
                 numNormals = mesh.Normals.Count;
+                filePath = export;
                 app = a;
             }
         }
