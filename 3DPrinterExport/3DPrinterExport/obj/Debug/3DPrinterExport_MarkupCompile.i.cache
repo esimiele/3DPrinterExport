@@ -4,17 +4,17 @@
 winexe
 C#
 .cs
-C:\Users\Eric Simiele\Documents\GitHub\3DPrinterExport\3DPrinterExport\3DPrinterExport\obj\Debug\
+I:\ESimiele\Research\3DPrinterExport\3DPrinterExport\3DPrinterExport\obj\Debug\
 _3DPrinterExport
 none
 false
 DEBUG;TRACE
-C:\Users\Eric Simiele\Documents\GitHub\3DPrinterExport\3DPrinterExport\3DPrinterExport\App.xaml
-1219584333
+I:\ESimiele\Research\3DPrinterExport\3DPrinterExport\3DPrinterExport\App.xaml
+2259850013
 
-7-874324145
-161439681067
-MainWindow.xaml;
+9-34387678
+16-1477664532
+exportProgressWindow.xaml;MainWindow.xaml;
 
-False
+True
 

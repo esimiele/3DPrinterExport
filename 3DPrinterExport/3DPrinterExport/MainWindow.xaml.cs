@@ -10,6 +10,9 @@ using VMS.TPS.Common.Model.API;
 using Microsoft.Win32;
 using System.IO;
 using System.Reflection;
+using System.Windows.Threading;
+using System.Threading;
+
 
 namespace _3DPrinterExport
 {
@@ -34,24 +37,23 @@ namespace _3DPrinterExport
         public MainWindow(StartupEventArgs e)
         {
             InitializeComponent();
-            if(!Directory.Exists(exportDir)) exportDir = System.Reflection.Assembly.GetExecutingAssembly().Location;
+            if (!Directory.Exists(exportDir)) exportDir = System.Reflection.Assembly.GetExecutingAssembly().Location;
             try { app = VMS.TPS.Common.Model.API.Application.CreateApplication(); }
             catch (Exception except) { MessageBox.Show(String.Format("Warning! Could not generate Aria application instance because: {0}", except.Message)); }
-            if(app != null)
+            if (app != null)
             {
-                if(e.Args.Length == 2)
+                if (e.Args.Length == 2)
                 {
                     //called from Eclipse
                     //can open patient and structure set and populate comboBoxes
                     mrn = e.Args.ElementAt(0);
                     ss = e.Args.ElementAt(1);
-                    if(!string.IsNullOrEmpty(mrn) && !string.IsNullOrWhiteSpace(mrn))
+                    if (!string.IsNullOrEmpty(mrn) && !string.IsNullOrWhiteSpace(mrn))
                     {
                         mrnTB.Text = mrn;
                         openPatient();
                     }
                     if (pi != null) loadSSCBandSelectSS(ss);
-                    if (selectedSS != null) loadStructureCB();
                 }
             }
         }
@@ -79,7 +81,6 @@ namespace _3DPrinterExport
                     mrn = mrnTB.Text;
                     openPatient();
                     if (pi != null) loadSSCBandSelectSS();
-                    if (selectedSS != null) loadStructureCB();
                 }
             }
         }
@@ -120,10 +121,9 @@ namespace _3DPrinterExport
             doNotUpdate = true;
             structureCB.Items.Clear();
             selectedSS = pi.StructureSets.FirstOrDefault(x => x.Id == ssCB.SelectedItem.ToString());
-            if(selectedSS == null) { MessageBox.Show("No structure set found! Exiting!"); return; }
+            if (selectedSS == null) { MessageBox.Show("No structure set found! Exiting!"); return; }
             doNotUpdate = false;
-            foreach (Structure itr in selectedSS.Structures) structureCB.Items.Add(itr.Id);
-            structureCB.SelectedIndex = 0;
+            loadStructureCB();
         }
 
         private void structureCB_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -131,7 +131,7 @@ namespace _3DPrinterExport
             if (app == null) return;
             if (doNotUpdate) return;
             renderStructure = selectedSS.Structures.FirstOrDefault(x => x.Id == structureCB.SelectedItem.ToString());
-            if (renderStructure == null) { MessageBox.Show("No structure found! Exiting!"); return; }
+            if (renderStructure == null || renderStructure.IsEmpty) { MessageBox.Show("No structure found or structure is empty! Exiting!"); return; }
             TotalDx = TotalDy = 0;
             renderStructureInView(renderStructure.MeshGeometry);
         }
@@ -141,7 +141,7 @@ namespace _3DPrinterExport
             Point3D centerPoint = new Point3D((mesh.Positions.Max(x => x.X) + mesh.Positions.Min(x => x.X)) / 2, (mesh.Positions.Max(x => x.Y) + mesh.Positions.Min(x => x.Y)) / 2, (mesh.Positions.Max(x => x.Z) + mesh.Positions.Min(x => x.Z)) / 2);
             Point3DCollection pts = new Point3DCollection(mesh.Positions);
             mesh.Positions.Clear();
-            for(int i = 0; i < pts.Count; i++) mesh.Positions.Add(new Point3D(pts.ElementAt(i).X - centerPoint.X, pts.ElementAt(i).Y - centerPoint.Y, pts.ElementAt(i).Z - centerPoint.Z));
+            for (int i = 0; i < pts.Count; i++) mesh.Positions.Add(new Point3D(pts.ElementAt(i).X - centerPoint.X, pts.ElementAt(i).Y - centerPoint.Y, pts.ElementAt(i).Z - centerPoint.Z));
 
             //clear the viewport and initialize
             myViewport3D.Children.Clear();
@@ -157,7 +157,7 @@ namespace _3DPrinterExport
 
             // Specify the direction that the camera is pointing.
             myPCamera.LookDirection = new Vector3D(0, 1, 0);
-            
+
             //which way is up
             myPCamera.UpDirection = new Vector3D(0, 0, 1);
 
@@ -180,7 +180,7 @@ namespace _3DPrinterExport
             //myModel3DGroup.Children.Add(ambientLight);
 
             //normals (not supplied by default in Eclipse)
-            if(!mesh.Normals.Any()) mesh.Normals = getNormals(mesh);
+            if (!mesh.Normals.Any()) mesh.Normals = getNormals(mesh);
 
             //// Create a collection of vertex positions for the MeshGeometry3D.
             //Point3DCollection myPositionCollection = new Point3DCollection();
@@ -231,7 +231,7 @@ namespace _3DPrinterExport
             myViewport3D.Children.Add(myModelVisual3D);
         }
 
-        private Vector3DCollection getNormals(MeshGeometry3D mesh)
+        public Vector3DCollection getNormals(MeshGeometry3D mesh)
         {
             Vector3DCollection normals = new Vector3DCollection();
             Int32Collection indices = mesh.TriangleIndices;
@@ -251,6 +251,8 @@ namespace _3DPrinterExport
 
             return normals;
         }
+
+        public Point3DCollection getPositions(MeshGeometry3D mesh) { if (mesh != null) return mesh.Positions; else return new Point3DCollection(); }
 
         private void Grid_MouseWheel(object sender, MouseWheelEventArgs e)
         {
@@ -284,7 +286,7 @@ namespace _3DPrinterExport
             if (_leftMouseDown)
             {
                 double newX, newY, newZ;
-                newX = myPCamera.Position.X + (((e.GetPosition(myViewport3D).X - leftDownPos.X) * Vector3D.CrossProduct(myPCamera.UpDirection, myPCamera.LookDirection).X) + ((e.GetPosition(myViewport3D).Y - leftDownPos.Y) * myPCamera.UpDirection.X))/1.5;
+                newX = myPCamera.Position.X + (((e.GetPosition(myViewport3D).X - leftDownPos.X) * Vector3D.CrossProduct(myPCamera.UpDirection, myPCamera.LookDirection).X) + ((e.GetPosition(myViewport3D).Y - leftDownPos.Y) * myPCamera.UpDirection.X)) / 1.5;
                 newY = myPCamera.Position.Y + (((e.GetPosition(myViewport3D).X - leftDownPos.X) * Vector3D.CrossProduct(myPCamera.UpDirection, myPCamera.LookDirection).Y) + ((e.GetPosition(myViewport3D).Y - leftDownPos.Y) * myPCamera.UpDirection.Y)) / 1.5;
                 newZ = myPCamera.Position.Z + (((e.GetPosition(myViewport3D).X - leftDownPos.X) * Vector3D.CrossProduct(myPCamera.UpDirection, myPCamera.LookDirection).Z) + ((e.GetPosition(myViewport3D).Y - leftDownPos.Y) * myPCamera.UpDirection.Z)) / 1.5;
                 myPCamera.Position = new Point3D(newX, newY, newZ);
@@ -318,8 +320,35 @@ namespace _3DPrinterExport
             }
         }
 
+        //method to create the new thread, set the apartment state, set the new thread to be a background thread, and execute the action supplied to this method
+        private void RunOnNewThread(Action a)
+        {
+            Thread t = new Thread(() => a());
+            t.SetApartmentState(ApartmentState.STA);
+            t.IsBackground = true;
+            t.Start();
+        }
+
         private void exportSTL_Click(object sender, RoutedEventArgs e)
         {
+            ESAPIworker.dataContainer d = new ESAPIworker.dataContainer();
+            d.construct(renderStructure.MeshGeometry, app);
+            ESAPIworker slave = new ESAPIworker(d);
+            //create a new frame (multithreading jargon)
+            DispatcherFrame frame = new DispatcherFrame();
+            RunOnNewThread(() =>
+            {
+                //pass the progress window the newly created thread and this instance of the optimizationLoop class.
+                exportProgressWindow pw = new exportProgressWindow(slave, this);
+                pw.ShowDialog();
+
+                //tell the code to hold until the progress window closes.
+                frame.Continue = false;
+            });
+
+            Dispatcher.PushFrame(frame);
+
+            return;
             if (app == null) { MessageBox.Show("Not connected to Eclipse! Exiting!"); return; }
             if (renderStructure == null) { MessageBox.Show("No Structure to export! Exiting!"); return; }
             MeshGeometry3D mesh = renderStructure.MeshGeometry;
@@ -366,6 +395,7 @@ namespace _3DPrinterExport
         {
             if (app == null) return;
             if (pi != null) app.ClosePatient();
+            app.Dispose();
         }
 
         private void loadSTL(string stlFile)
@@ -378,7 +408,7 @@ namespace _3DPrinterExport
                     string solidName = "";
                     MeshGeometry3D mesh = new MeshGeometry3D();
                     int index = 0;
-                    while((line = reader.ReadLine()) != null)
+                    while ((line = reader.ReadLine()) != null)
                     {
                         List<string> stringList = line.Split(' ').ToList();
                         if (line.Contains("solid")) solidName = stringList.ElementAt(1);

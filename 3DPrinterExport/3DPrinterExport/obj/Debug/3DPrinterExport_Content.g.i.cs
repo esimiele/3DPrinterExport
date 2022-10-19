@@ -8,6 +8,6 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-[assembly: System.Windows.Resources.AssemblyAssociatedContentFileAttribute("images/rutgers_university_seal.png")]
+[assembly: System.Windows.Resources.AssemblyAssociatedContentFileAttribute("images/rutgers_university_seal.svg")]
 
 

@@ -1,0 +1,17 @@
+﻿<Window x:Class="_3DPrinterExport.exportProgressWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:_3DPrinterExport"
+        mc:Ignorable="d"
+        Title="Progress Window" SizeToContent="WidthAndHeight">
+    <Grid Width="280" Height="100" Background="DarkGray">
+        
+        <Grid Width="245" Height="29" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,10,0,0">
+            <Label Content="Export Progress: " VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,150,0"></Label>
+            <ProgressBar HorizontalAlignment="Right" Height="20" Margin="0,0,0,0" VerticalAlignment="Center" Width="150" Minimum="0" Maximum="100" Foreground="LimeGreen" Name="progress"/>
+            <TextBlock Text="{Binding ElementName=progress, Path=Value, StringFormat={}{0:0}%}" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,65,0" />
+        </Grid>
+    </Grid>
+</Window>
