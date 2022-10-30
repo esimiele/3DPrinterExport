@@ -24,5 +24,7 @@ Viewport controls:
 
 The help button also explains all of the above. Once a structure has been selected from the drop-down, it will automatically be rendered in the viewport. Changing to another structure in the dropdown will clear the viewport and render the selected structure. For testing and review, you can choose to open an existing stl file (ASCII format only!). The code will construct the 3D mesh and render the structure.
 
+Example stl files are provided. The first is a bolus from a leg treatment plan and the second is an HRCTV from a tandem and ovoid treatment with the tandem subtracted (used for another project). I recommend downloading the code, building the exe, running the program within visual studio (to make troubleshooting easier), and loading one of the example stl files to make sure the code is working.
+
 Open to suggestions if anyone is interested in contributing. If so, please open an issue or pull request on this page.
 Thanks!
