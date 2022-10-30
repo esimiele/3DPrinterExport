@@ -1,5 +1,5 @@
 # 3DPrinterExport
-A simple tool to visualize structures in Eclipse and export them as stl files
+A simple tool to visualize structures from Eclipse and export them as stl files
 
 updated 10/28/22
 The purpose of this code is to visualize structures from Eclipse and export them as STL files for use in 3D printing. Similar projects can export Eclipse structures in STL format (e.g., https://github.com/esimiele/Varian-Code-Samples/tree/master/Eclipse%20Scripting%20API/projects/Export3D), but these previous works do not provide the functionality to view a 3D rendering of the structure prior to export. While Eclipse provides the functionality to view a 3D rendering of the structure, the lighting in Eclipse is ambient, which doesn't show the individual facets of the object that will be present in the final print. You could also simply export the object in stl format and open it in a 3D rendering program such as paint3D (slow!!) or 3D viewer, which are pre-installed on all windows 10 computers. However, this tool cuts out that additional step.
